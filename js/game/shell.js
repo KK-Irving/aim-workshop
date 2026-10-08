@@ -186,20 +186,29 @@
     tryFullscreen();
 
     /* 占位 / 真实训练场在后台构建，加载条走完即切换 */
-    setTimeout(() => {
-      const canvas = $(".gs-canvas", root);
-      session.playfield = window.AIM_PLAYFIELD
-        ? new window.AIM_PLAYFIELD(canvas, session)
-        : stubPlayfield(canvas, session);
-      /* 练法规则层（drills.js）：控制靶位生成/难度/死亡与结束 */
-      session.runtime = window.AIM_DRILL_RUNTIME
-        ? window.AIM_DRILL_RUNTIME(session)
-        : null;
-      runLoading(session, enterStage);
+    session.openTimer = setTimeout(() => {
+      session.openTimer = 0;
+      beginStageBuild();
     }, 60);
   }
 
+  function beginStageBuild() {
+    if (!session || session.stageBuilt) return;
+    session.stageBuilt = true;
+    const canvas = $(".gs-canvas", root);
+    session.playfield = window.AIM_PLAYFIELD
+      ? new window.AIM_PLAYFIELD(canvas, session)
+      : stubPlayfield(canvas, session);
+    /* 练法规则层（drills.js）：控制靶位生成/难度/死亡与结束 */
+    session.runtime = window.AIM_DRILL_RUNTIME
+      ? window.AIM_DRILL_RUNTIME(session)
+      : null;
+    runLoading(session, enterStage);
+  }
+
   function enterStage() {
+    if (session.entered) return;
+    session.entered = true;
     $(".g-loading", root).classList.add("hidden");
     $(".g-stage", root).classList.remove("hidden");
     $(".g-gate", root).classList.remove("hidden");
@@ -294,6 +303,7 @@
     cancelAnimationFrame(session.raf);
     clearInterval(session.watch);
     clearTimeout(session.loadTimer);
+    if (session.openTimer) clearTimeout(session.openTimer);
     if (session.playfield && session.playfield.dispose) session.playfield.dispose();
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
     if (document.pointerLockElement && document.exitPointerLock) document.exitPointerLock();
@@ -395,6 +405,14 @@
     step(dt) {
       if (!session || !session.playfield || session.paused) return;
       session.playfield.render(dt || 0.05, performance.now() / 1000);
+    },
+    /* 调试/自动化：同步跳过加载页（被节流环境下 setTimeout 不可靠） */
+    _skipLoading() {
+      if (!session) return;
+      if (session.openTimer) { clearTimeout(session.openTimer); session.openTimer = 0; }
+      beginStageBuild();
+      clearTimeout(session.loadTimer);
+      if (!$(".g-loading", root).classList.contains("hidden")) enterStage();
     },
   };
   bindOnce();

@@ -30,27 +30,48 @@
     let queue = [];           /* 帧驱动定时器：{t, fn} */
     let shooting = [];        /* 会开枪的活跃 Bot：{bot, nextShot, react} */
     let peekAnim = null;      /* 架枪闪身动画 */
+    let peekTimer = 1.2;
+    let peekBot = null;
+    let peekLeft = 0;
+    let behindTimer = 2.0;
     let wave = 0;
+    let sceneTotal = 4;       /* 名场面脚本靶数 */
+    let sceneSpawned = 0;
 
     const rand = (a, b) => a + Math.random() * (b - a);
     const schedule = (delay, fn) => queue.push({ t: delay, fn });
 
-    /* ---------------- 布点 ---------------- */
+    /* ---------------- 布点（保证从出生点视线可达） ---------------- */
+    function eyeOf() {
+      const p = pf.playerInfo();
+      return new THREE.Vector3(p.pos.x, p.pos.y + 1.6, p.pos.z);
+    }
+    function visibleSpot(gen) {
+      const eye = eyeOf();
+      for (let i = 0; i < 8; i++) {
+        const [x, z] = gen();
+        if (!pf.losBlocked(eye, new THREE.Vector3(x, 1.15, z))) return [x, z];
+      }
+      return gen(); /* 兜底：多次遮挡就随机放（可能需绕枪） */
+    }
     function laneSpot() {
-      return [rand(-LANE.halfW, LANE.halfW), rand(LANE.zMin, LANE.zMax)];
+      return visibleSpot(() => [rand(-LANE.halfW, LANE.halfW), rand(LANE.zMin, LANE.zMax)]);
     }
     function behindSpot() {
       const p = pf.playerInfo();
-      /* forward = (-sin(yaw), -cos(yaw))，取反即身后方向，再散布 ±40° */
+      /* forward = (-sin(yaw), -cos(yaw))，取反即身后方向，再散布 ±40°；
+         钳制在场内，避免生成进背后墙/边墙里 */
       const a = p.yaw + Math.PI + rand(-0.7, 0.7);
-      const d = rand(7, 11);
-      return [p.pos.x - Math.sin(a) * d, p.pos.z - Math.cos(a) * d];
+      const d = rand(6, 8);
+      const x = Math.max(-LANE.halfW, Math.min(LANE.halfW, p.pos.x - Math.sin(a) * d));
+      const z = Math.max(LANE.zMin, Math.min(22, p.pos.z - Math.cos(a) * d));
+      return [x, z];
     }
     function holdSpot() {
       const p = pf.playerInfo();
       const a = p.yaw + rand(-0.55, 0.55); /* 前方扇形 */
       const d = rand(9, 16);
-      return [p.pos.x - Math.sin(a) * d, p.pos.z - Math.cos(a) * d];
+      return visibleSpot(() => [p.pos.x - Math.sin(a) * d, p.pos.z - Math.cos(a) * d]);
     }
 
     /* ---------------- 生成 / 回收 ---------------- */
@@ -87,9 +108,6 @@
       pf.msg(`<b>架枪守点</b> · 走位已锁定，盯住枪线`, 1800);
       scheduleNextPeek(1.2);
     }
-    let peekTimer = 1.2;
-    let peekBot = null;
-    let peekLeft = 0;
     function scheduleNextPeek(t) { peekTimer = t; }
     function doPeek() {
       if (peekBot && peekBot.alive) despawn(peekBot); /* 上一个没打死，缩回 */
@@ -100,7 +118,6 @@
       pf.msg(`<b>背闪训练</b> · 注意身后脚步声`, 1800);
       scheduleNextBehind(2.0);
     }
-    let behindTimer = 2.0;
     function scheduleNextBehind(t) { behindTimer = t; }
     function doBehind() {
       const b = spawnAt(behindSpot, {});
@@ -117,8 +134,8 @@
       schedule(2.4, () => {
         pf.msg(`<b style="color:var(--red)">GO!</b>`, 600);
         let d = 0;
-        for (let i = 0; i < 4; i++) {
-          schedule(d, () => spawnAt(laneSpot, {}));
+        for (let i = 0; i < sceneTotal; i++) {
+          schedule(d, () => { sceneSpawned++; spawnAt(laneSpot, {}); });
           d += 0.9;
         }
       });
@@ -131,8 +148,13 @@
       shooting = [];
       peekBot = null;
       wave = 0;
+      sceneSpawned = 0;
+      peekTimer = 1.2;
+      behindTimer = 2.0;
       pf.setHp(/(\d+)\s*血量/.test(desc) ? +(/(\d+)\s*血量/.exec(desc)[1]) : 100);
       pf.setMoveLocked(false);
+      /* 清掉 playfield 预生成的靶机，由练法接管生成节奏 */
+      pf.botsList().forEach((b) => pf.hideBot(b));
       if (type === "架枪") startHold();
       else if (type === "背闪") startFlash();
       else if (type === "名场面") startScene();
@@ -207,6 +229,11 @@
           doBehind();
           scheduleNextBehind(rand(2.0, 3.2));
         }
+      } else if (type === "名场面") {
+        /* 脚本靶全部出完且场上清空 → 提前完成 */
+        if (sceneSpawned >= sceneTotal && !pf.botsList().some((b) => b.alive)) {
+          finish("cleared");
+        }
       }
     }
 
@@ -228,13 +255,7 @@
         peekBot = null;
         scheduleNextPeek(rand(0.6, 1.2));
       }
-      /* 名场面：全部清完且没有待生成 → 提前完成 */
-      if (type === "名场面" && phase === "active") {
-        const pending = queue.length;
-        if (!pf.botsList().some((b) => b.alive) && !pending) {
-          schedule(0.6, () => finish("cleared"));
-        }
-      }
+      /* 名场面完成判定统一在 update() 里做 */
     }
     function onPlayerDead() {
       if (deathEnds) finish("dead");
@@ -246,6 +267,15 @@
       start, update, onKill, onPlayerDead, onOver,
       controlsRespawns: true,
       get phase() { return phase; },
+      /* 调试/自动化 */
+      debug() {
+        return {
+          phase, hard, deathEnds, type,
+          shooting: shooting.length,
+          queue: queue.length,
+          aliveBots: pf.botsList().filter((b) => b.alive).length,
+        };
+      },
     };
   };
 })();

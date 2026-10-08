@@ -108,7 +108,7 @@
       [[-5.6, -6], [5.6, -11], [-5.6, -22], [5.6, -31]].forEach(([x, z]) => {
         addBox(x, 0, z, 1.1, 3.4, 1.1, mats.wall2);
       });
-      return { spawn: [0, 0, 16], yaw: Math.PI /* 面向 -z */, laneLen: L, halfW: W / 2 - 0.6 };
+      return { spawn: [0, 0, 16], yaw: 0 /* 面向 -z 走廊深处 */, laneLen: L, halfW: W / 2 - 0.6 };
     }
 
     /* ---------------- Bot（训练靶机） ---------------- */
@@ -347,6 +347,14 @@
       muzzleFlash(muzzle);
       const end = hits.length ? hits[0].point : cam.position.clone().addScaledVector(dir, 120);
       tracer(muzzle, end);
+      /* 调试：最近一发的射线与首个命中 */
+      api.lastRay = {
+        from: cam.position.clone().toArray(),
+        dir: dir.toArray(),
+        hit: hits.length
+          ? { name: hits[0].object.userData.part || hits[0].object.geometry?.type || "world", point: hits[0].point.toArray(), dist: hits[0].distance }
+          : null,
+      };
 
       player.pitchKick += 0.0038 + Math.min(0.004, player.burst * 0.0006);
       viewmodel.position.z = -0.38; /* 枪身后坐，渲染循环里回位 */
@@ -455,7 +463,9 @@
     let t = 0;
     function render(dt, now) {
       t += dt;
+      api._renderFrames = (api._renderFrames || 0) + 1;
       if (session.live && !session.paused && !stats.over) {
+        api._liveFrames = (api._liveFrames || 0) + 1;
         if (session.runtime && session.runtime.update) session.runtime.update(dt, t);
         if (player.firing) tryFire(now);
         player.fireCd = Math.max(0, player.fireCd - dt);
@@ -484,7 +494,8 @@
               b.dieT -= dt;
               b.group.rotation.z = Math.min(Math.PI / 2, b.group.rotation.z + dt * 6);
               if (b.dieT <= 0) b.group.visible = false;
-            } else if (stats.over === false) {
+            } else if (stats.over === false && !(session.runtime && session.runtime.controlsRespawns)) {
+              /* 练法层接管生成节奏时，内建随机重生不生效 */
               b.respawnT -= dt;
               if (b.respawnT <= 0 && session.live) {
                 const x = (srand() - 0.5) * 2 * (lane.halfW - 1);
@@ -588,6 +599,18 @@
       },
       tracer,
       msg(html, ms) { session.hud.msg(html, ms); },
+      /* 视线检测：from→to 之间是否被场景几何遮挡（练法层布点用） */
+      losBlocked(from, to) {
+        const dir = to.clone().sub(from);
+        const dist = dir.length();
+        if (dist < 0.001) return false;
+        dir.normalize();
+        ray.set(from, dir);
+        ray.far = dist - 0.1;
+        const blocked = ray.intersectObjects(world.children, false).length > 0;
+        ray.far = 200;
+        return blocked;
+      },
       /* 供自动化/调试：不改内部状态即可观察 */
       debug: () => ({
         pos: player.pos.toArray(), yaw: player.yaw, mag: player.mag, stats,
