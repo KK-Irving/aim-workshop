@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>瞄准专家 · 瓦工坊 — 仿站演示</title>
+  <meta name="description" content="仿 ishoutu.cn/aim 瞄准工坊的静态演示页面：无畏契约创意工坊地图，练预瞄、架枪、背闪" />
+  <link rel="icon" href="assets/logo.webp" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ============ 顶部导航 ============ -->
+  <header class="topbar">
+    <a class="brand" href="./index.html">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 1v6M12 17v6M1 12h6M17 12h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor"/></svg>
+      </span>
+      <span class="brand-text">
+        <b>瞄准专家</b>
+        <i>爱收徒出品 · 仿站演示</i>
+      </span>
+    </a>
+
+    <nav class="topnav" aria-label="主导航">
+      <a class="nav-item is-on" href="#">瓦工坊</a>
+      <a class="nav-item" href="#">小球项目</a>
+      <a class="nav-item" href="#">训练记录</a>
+      <a class="nav-item" href="#">参数设置</a>
+      <a class="nav-item" href="#">排行榜</a>
+    </nav>
+
+    <div class="top-right">
+      <button class="btn-desktop" id="btnDesktop" type="button" title="下载桌面版">
+        <svg viewBox="0 0 24 24" width="17" height="17"><rect x="3" y="4" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 20h6M12 16v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+
+      <button class="delay-pill" type="button" title="延迟检测">
+        <span class="delay-badge">2</span>
+        有延迟问题？点击检测
+      </button>
+
+      <div class="sens" title="游戏内灵敏度（eDPI 换算基准）">
+        <span class="sens-label">游戏内灵敏度</span>
+        <b class="sens-val" id="sensVal">0.5</b>
+        <span class="sens-spin">
+          <button type="button" id="sensUp" aria-label="提高灵敏度">▲</button>
+          <button type="button" id="sensDown" aria-label="降低灵敏度">▼</button>
+        </span>
+      </div>
+
+      <button class="btn-icon" id="btnTheme" type="button" title="切换明暗主题">
+        <svg class="i-moon" viewBox="0 0 24 24" width="16" height="16"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="4.4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9 19 19M19 5l-2.1 2.1M7.1 16.9 5 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+
+      <button class="user" type="button">
+        <span class="user-avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </span>
+        <span class="user-text"><b>访客</b><i>登录 / 注册</i></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ 左侧边栏 ============ -->
+  <aside class="sidebar">
+    <div class="side-quick" id="sideQuick" role="button" tabindex="0">
+      <span class="side-quick-edit" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      </span>
+      <small>快速开始</small>
+      <b class="side-quick-go">
+        <svg viewBox="0 0 24 24" width="13" height="13"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+        开练
+      </b>
+      <i>瓦格速击 · 60 秒</i>
+    </div>
+
+    <div class="side-sec">训练</div>
+    <a class="side-item" href="#" id="sideFav">
+      <svg viewBox="0 0 24 24" width="15" height="15"><path d="M20.8 5.6a5 5 0 0 0-7.1 0L12 7.3l-1.7-1.7a5 5 0 1 0-7.1 7.1L12 21l8.8-8.3a5 5 0 0 0 0-7.1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      收藏项目
+      <span class="side-badge" id="favCount">0</span>
+    </a>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" width="15" height="15"><path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      训练清单
+    </a>
+
+    <div class="side-sec">工具</div>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" width="15" height="15"><rect x="3.5" y="7" width="17" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 7V5.4A1.4 1.4 0 0 1 9.4 4h5.2A1.4 1.4 0 0 1 16 5.4V7M3.5 12h17" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      瓦创意工坊
+    </a>
+
+    <div class="side-sec">更多</div>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" width="15" height="15"><path d="M13 2.5 4.5 13.5H11l-1 8 8.5-11H12z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      免费体检
+    </a>
+    <a class="side-item" href="#">
+      <svg viewBox="0 0 24 24" width="15" height="15"><rect x="4" y="5" width="16" height="15" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9.5h16M8.5 3.5v3M15.5 3.5v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      特殊活动
+    </a>
+  </aside>
+
+  <!-- ============ 主内容 ============ -->
+  <main class="main">
+
+    <!-- 英雄横幅：轮播 -->
+    <section class="hero" id="hero" aria-label="推荐训练">
+      <img class="hero-bg" id="heroBg" src="assets/covers/summit.webp" alt="" />
+      <div class="hero-shade" aria-hidden="true"></div>
+      <svg class="hero-edge" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <polyline points="100,78 62,100" pathLength="1" />
+      </svg>
+      <img class="hero-agent" id="heroAgent" src="assets/agents/jett.webp" alt="" />
+      <div class="hero-mapname" id="heroMapName">天枢云阙</div>
+
+      <div class="hero-info">
+        <h1>瓦工坊</h1>
+        <p>无畏契约创意工坊地图 · 5 张图的真实点位，练预瞄、架枪、背闪</p>
+      </div>
+
+      <div class="feat" id="feat">
+        <div class="feat-why">
+          <span class="feat-rec">推荐</span>
+          <span class="feat-map" id="featMap">天枢云阙</span>
+        </div>
+        <div class="feat-title" id="featTitle">Boaster架枪训练（困难）</div>
+        <div class="feat-tags">
+          <span class="feat-tag" id="featType">架枪</span>
+          <span class="feat-tag is-plain" id="featPlays">1.5万 次游玩</span>
+        </div>
+        <p class="feat-desc" id="featDesc">Boaster常练项目 冷静开枪带点小跟枪微调</p>
+        <button class="btn btn-go" id="featGo" type="button">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>
+          开始游玩
+        </button>
+      </div>
+
+      <div class="hero-dots" id="heroDots" role="tablist" aria-label="轮播分页"></div>
+    </section>
+
+    <!-- 地图切换条 -->
+    <nav class="strip" id="strip" aria-label="选择地图"></nav>
+
+    <!-- 练法筛选 -->
+    <div class="filters">
+      <div class="chips" id="chips"></div>
+      <div class="filters-legend" aria-hidden="true">
+        <span class="legend-dash"></span>
+        四种练法：<b>预瞄</b> 提枪口 <b>架枪</b> 守点位 <b>背闪</b> 转身补枪 <b>名场面</b> 复刻职业一波
+      </div>
+    </div>
+
+    <!-- 分组卡片列表 -->
+    <div id="groups"></div>
+
+    <p class="empty hidden" id="empty">没有匹配的训练项目，换个筛选条件试试。</p>
+  </main>
+
+  <!-- ============ 底部状态栏 ============ -->
+  <footer class="statusbar">
+    <label class="search">
+      <svg viewBox="0 0 24 24" width="14" height="14"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.2 15.2 4.6 4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <input id="searchInput" type="search" placeholder="搜索训练项目…" autocomplete="off" />
+      <kbd>/</kbd>
+    </label>
+
+    <div class="status-note">
+      <span class="tag-test">测试检查</span>
+      初期测试版本 · 仿站学习演示，数据抓取自原站页面，有任何问题以原站为准
+    </div>
+
+    <div class="status-links">
+      <button class="status-link" id="btnKook" type="button">
+        <svg viewBox="0 0 24 24" width="14" height="14"><path d="M21 11.5a8.5 8.5 0 0 1-12.4 7.5L3 20l1-5.4A8.5 8.5 0 1 1 21 11.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        官方交流群 <b>KOOK</b>
+      </button>
+      <button class="status-link" id="btnQq" type="button">
+        QQ 群
+        <svg viewBox="0 0 24 24" width="12" height="12"><path d="m6 14 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- KOOK / QQ 群面板 -->
+  <div class="pop hidden" id="qqPop" role="dialog" aria-label="官方交流群">
+    <div class="pop-head">加入官方交流群</div>
+    <div class="pop-row">
+      <span class="pop-kook">KOOK</span>
+      <code id="kookLink">www.kookapp.cn/a/…</code>
+      <button class="btn-copy" data-copy="kook" type="button">复制链接</button>
+    </div>
+    <div id="qqRows"></div>
+  </div>
+
+  <!-- 排行榜弹窗（演示数据） -->
+  <div class="modal-mask hidden" id="boardMask">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="排行榜">
+      <div class="modal-head">
+        <b id="boardTitle">排行榜</b>
+        <button class="modal-x" id="boardClose" type="button" aria-label="关闭">✕</button>
+      </div>
+      <p class="modal-sub" id="boardSub"></p>
+      <table class="board">
+        <thead><tr><th>排名</th><th>玩家</th><th>击杀</th><th>用时</th></tr></thead>
+        <tbody id="boardBody"></tbody>
+      </table>
+      <p class="modal-foot">演示数据，仅用于展示布局 · 接入后端可换真实战绩</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
