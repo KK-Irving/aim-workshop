@@ -223,7 +223,8 @@
     wrap.querySelectorAll("[data-play]").forEach((btn) =>
       btn.addEventListener("click", () => {
         const d = drillByNo[btn.dataset.play];
-        toast(`▶ 演示模式：开始加载 <b>${d.title}</b>（${mapName(d.map)} · NO.${d.no}）`);
+        if (window.AIM_GAME) AIM_GAME.open(d.no);
+        else toast(`▶ 演示模式：开始加载 <b>${d.title}</b>（${mapName(d.map)} · NO.${d.no}）`);
       })
     );
     wrap.querySelectorAll("[data-board]").forEach((btn) =>
@@ -399,12 +400,19 @@
     );
   });
 
-  $("#sideQuick").addEventListener("click", () =>
-    toast("▶ 演示模式：瓦格速击 · 60 秒（模拟快速开始）")
-  );
+  $("#sideQuick").addEventListener("click", () => {
+    /* 快速开始：合成一个 60 秒速击项目 */
+    if (window.AIM_GAME) {
+      AIM_GAME.open({
+        map: "ascent", no: "QUICK60", title: "瓦格速击 · 60 秒", type: "预瞄",
+        plays: "—", diff: "l3", pos: "50% 50%", desc: "60秒限时，机器人会开枪，随机靶位速击",
+      });
+    } else toast("▶ 演示模式：瓦格速击 · 60 秒（模拟快速开始）");
+  });
   $("#featGo").addEventListener("click", () => {
     const f = D.featured[state.featIdx];
-    toast(`▶ 演示模式：开始 <b>${drillByNo[f.no].title}</b>`);
+    if (window.AIM_GAME) AIM_GAME.open(f.no);
+    else toast(`▶ 演示模式：开始 <b>${drillByNo[f.no].title}</b>`);
   });
   $("#btnDesktop").addEventListener("click", () =>
     toast("演示站没有桌面版，去原站 ishoutu.cn 下载哦")

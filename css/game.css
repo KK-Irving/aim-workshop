@@ -1,0 +1,194 @@
+/* ============================================================
+ * 瓦工坊 · 游戏层样式（加载页 / 训练场 HUD / 暂停 / 结算）
+ * 配色沿用站点设计变量（style.css :root）：主红 #fd4556 等
+ * ============================================================ */
+
+.game-root {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: #0b0d10;
+  font-family: var(--font);
+  color: var(--ink);
+  user-select: none;
+}
+.game-root.hidden { display: none; }
+.game-root button { font-family: var(--font); cursor: pointer; }
+
+/* ============ 加载页（仿原站 WorkshopLoading） ============ */
+.g-loading { position: absolute; inset: 0; overflow: hidden; }
+.gl-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center 30%;
+  filter: saturate(1.05);
+  transform: scale(1.04);
+}
+.gl-shade {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, rgba(11, 13, 16, 0.94) 0%, rgba(11, 13, 16, 0.78) 34%, rgba(11, 13, 16, 0.25) 70%, rgba(11, 13, 16, 0.55) 100%),
+    linear-gradient(0deg, rgba(11, 13, 16, 0.95) 4%, rgba(11, 13, 16, 0) 42%);
+}
+.gl-agent {
+  position: absolute; right: 8%; bottom: 0; height: 82%;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+  pointer-events: none;
+}
+.gl-head { position: absolute; left: 4.5%; top: 9%; max-width: 46%; }
+.gl-workshop {
+  font-size: 12px; letter-spacing: 0.42em; font-weight: 900; color: var(--red);
+  margin-bottom: 14px;
+}
+.gl-title {
+  font-size: clamp(30px, 4.6vw, 56px); font-weight: 900; line-height: 1.12;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+.gl-sub { margin-top: 14px; font-size: 14px; color: var(--ink-dim); max-width: 520px; line-height: 1.7; }
+.gl-sub b { color: var(--red); font-weight: 700; margin-right: 6px; }
+
+.gl-mapcard {
+  position: absolute; left: 4.5%; top: 34%;
+  width: 240px; padding: 14px;
+  background: rgba(14, 17, 21, 0.88);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(4px);
+}
+.gl-mapname { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.gl-mapname span { font-weight: 900; font-size: 15px; }
+.gl-mapname i { font-style: normal; font-size: 10px; letter-spacing: 0.3em; color: var(--ink-faint); }
+.gl-minimap { display: block; width: 208px; height: 208px; background: #0d1015; }
+.gl-mapnote { margin-top: 10px; font-size: 11px; color: var(--ink-dim); }
+
+.gl-bottom { position: absolute; left: 4.5%; right: 4.5%; bottom: 6.5%; }
+.gl-stepname { font-size: clamp(18px, 2vw, 26px); font-weight: 900; }
+.gl-stepsub { margin-top: 6px; font-size: 12px; color: var(--ink-dim); }
+.gl-steps {
+  display: flex; gap: 26px; margin-top: 22px;
+  font-size: 11px; color: var(--ink-faint);
+}
+.gl-steps span { display: flex; align-items: center; gap: 7px; }
+.gl-steps i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ink-faint); transition: background 0.2s;
+}
+.gl-steps span.is-on { color: var(--ink); }
+.gl-steps span.is-on i { background: var(--red); box-shadow: 0 0 8px rgba(253, 69, 86, 0.8); }
+.gl-bar {
+  margin-top: 16px; height: 3px; background: rgba(236, 232, 225, 0.12);
+  overflow: hidden;
+}
+.gl-bar i {
+  display: block; height: 100%; width: 0;
+  background: var(--red); transition: width 0.25s ease;
+}
+.gl-back {
+  position: absolute; right: 0; bottom: -14px;
+  padding: 8px 18px; font-size: 12px;
+  color: var(--ink-dim); background: rgba(20, 23, 28, 0.85);
+  border: 1px solid var(--line);
+}
+.gl-back:hover { color: var(--ink); border-color: var(--ink-dim); }
+
+/* ============ 训练场 ============ */
+.g-stage { position: absolute; inset: 0; overflow: hidden; background: #000; }
+.g-stage.hidden { display: none; }
+.gs-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* ---- HUD ---- */
+.g-hud { position: absolute; inset: 0; pointer-events: none; }
+.hud-top {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 34px; align-items: stretch;
+}
+.hud-cell { text-align: center; min-width: 76px; }
+.hud-cell small { display: block; font-size: 10px; letter-spacing: 0.3em; color: var(--ink-faint); }
+.hud-cell b { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; text-shadow: 0 2px 10px rgba(0,0,0,0.7); }
+.hud-time-cell b { color: var(--ink); }
+.hud-time-cell.is-low b { color: var(--red); }
+
+.hud-cross {
+  position: absolute; left: 50%; top: 50%; width: 22px; height: 22px;
+  transform: translate(-50%, -50%);
+}
+.hud-cross::before, .hud-cross::after {
+  content: ""; position: absolute; background: rgba(61, 220, 151, 0.95);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.hud-cross::before { left: 50%; top: 0; width: 2px; height: 100%; transform: translateX(-50%); clip-path: polygon(0 0, 100% 0, 100% 38%, 0 38%, 0 62%, 100% 62%, 100% 100%, 0 100%); }
+.hud-cross::after { top: 50%; left: 0; height: 2px; width: 100%; transform: translateY(-50%); clip-path: polygon(0 0, 38% 0, 38% 100%, 0 100%, 62% 0, 100% 0, 100% 100%, 62% 100%); }
+.hud-cross.is-hit::before, .hud-cross.is-hit::after { background: var(--red); }
+
+.hud-hint {
+  position: absolute; left: 22px; bottom: 18px;
+  font-size: 11px; color: var(--ink-faint); letter-spacing: 0.08em;
+}
+.hud-ammo {
+  position: absolute; right: 26px; bottom: 14px;
+  display: flex; align-items: baseline; gap: 10px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+}
+.hud-ammo i { color: var(--ink-faint); font-style: normal; }
+.hud-ammo .hud-reserve { font-size: 16px; color: var(--ink-dim); }
+.hud-ammo b { font-size: 30px; font-weight: 900; }
+.hud-ammo.is-reload b { color: var(--red); }
+
+.hud-msg {
+  position: absolute; left: 50%; top: 58%; transform: translateX(-50%);
+  font-size: 15px; font-weight: 700; color: var(--ink);
+  text-align: center; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+.hud-hp {
+  position: absolute; left: 22px; bottom: 40px; width: 150px; height: 5px;
+  background: rgba(236, 232, 225, 0.14);
+}
+.hud-hp i {
+  display: block; height: 100%; width: 100%;
+  background: var(--green); transition: width 0.15s;
+}
+.hud-hp.is-low i { background: var(--red); }
+
+/* 受击红晕 */
+.hud-damage {
+  position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 120px 30px rgba(217, 48, 63, 0.55);
+  opacity: 0; transition: opacity 0.35s;
+}
+
+/* ---- 进入门 ---- */
+.g-gate {
+  position: absolute; inset: 0; z-index: 5;
+  display: grid; place-content: center; text-align: center; gap: 10px;
+  background: rgba(11, 13, 16, 0.45); cursor: pointer;
+}
+.g-gate.hidden { display: none; }
+.g-gate b { font-size: 22px; font-weight: 900; letter-spacing: 0.06em; }
+.g-gate small { font-size: 12px; color: var(--ink-dim); }
+
+/* ---- 暂停菜单 ---- */
+.g-pause {
+  position: absolute; inset: 0; z-index: 6;
+  display: grid; place-items: center;
+  background: rgba(11, 13, 16, 0.72); backdrop-filter: blur(3px);
+}
+.g-pause.hidden { display: none; }
+.gp-panel {
+  display: flex; flex-direction: column; gap: 12px; width: 260px;
+  padding: 26px; background: var(--card); border: 1px solid var(--line);
+}
+.gp-panel b { font-size: 17px; font-weight: 900; margin-bottom: 8px; }
+.gp-panel button {
+  padding: 11px 0; font-size: 13px; font-weight: 700;
+  color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+}
+.gp-panel button:hover { border-color: var(--red); color: var(--red); }
+.gp-panel .gp-resume { background: var(--red); border-color: var(--red); color: #fff; }
+.gp-panel .gp-resume:hover { background: var(--red-deep); color: #fff; }
+
+/* ---- 结算 ---- */
+.g-results {
+  position: absolute; inset: 0; z-index: 7;
+  display: grid; place-items: center;
+  background: rgba(11, 13, 16, 0.82); backdrop-filter: blur(4px);
+}
+.g-results.hidden { display: none; }
