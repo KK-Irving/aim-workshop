@@ -122,6 +122,13 @@
   position: absolute; left: 22px; bottom: 18px;
   font-size: 11px; color: var(--ink-faint); letter-spacing: 0.08em;
 }
+.hud-hint small { display: block; margin-top: 4px; font-size: 10px; color: rgba(236, 232, 225, 0.28); }
+
+.hud-minimap {
+  position: absolute; right: 26px; top: 20px;
+  width: 148px; height: 148px;
+  border: 1px solid var(--line);
+}
 .hud-ammo {
   position: absolute; right: 26px; bottom: 14px;
   display: flex; align-items: baseline; gap: 10px;
@@ -177,6 +184,12 @@
   padding: 26px; background: var(--card); border: 1px solid var(--line);
 }
 .gp-panel b { font-size: 17px; font-weight: 900; margin-bottom: 8px; }
+.gp-sens {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--ink-dim); margin-bottom: 4px;
+}
+.gp-sens input { flex: 1; accent-color: var(--red); }
+.gp-sens b { min-width: 28px; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
 .gp-panel button {
   padding: 11px 0; font-size: 13px; font-weight: 700;
   color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);

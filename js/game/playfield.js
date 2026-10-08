@@ -207,6 +207,50 @@
       flashLight.intensity = 2.4;
     }
 
+    /* ---------------- 小地图（俯视 2D） ---------------- */
+    const mm = document.querySelector(".hud-minimap");
+    const mmCtx = mm ? mm.getContext("2d") : null;
+    function drawMinimap() {
+      if (!mmCtx) return;
+      const W = mm.width, H = mm.height;
+      const X = (x) => W / 2 + (x / 17) * W;
+      const Y = (z) => ((z + 24) / 50) * H;
+      mmCtx.clearRect(0, 0, W, H);
+      mmCtx.fillStyle = "rgba(10, 12, 15, 0.78)";
+      mmCtx.fillRect(0, 0, W, H);
+      /* 墙体与掩体 */
+      for (const c of colliders) {
+        mmCtx.fillStyle = c.max[1] > 2.5 ? "rgba(236,232,225,0.20)" : "rgba(236,232,225,0.10)";
+        mmCtx.fillRect(
+          X(c.min[0]), Y(c.min[2]),
+          X(c.max[0]) - X(c.min[0]), Y(c.max[2]) - Y(c.min[2])
+        );
+      }
+      /* Bot */
+      for (const b of bots) {
+        if (!b.alive) continue;
+        mmCtx.fillStyle = "#ff4655";
+        mmCtx.beginPath();
+        mmCtx.arc(X(b.pos.x), Y(b.pos.z), 2.6, 0, 7);
+        mmCtx.fill();
+      }
+      /* 玩家箭头 */
+      const px = X(player.pos.x), py = Y(player.pos.z);
+      mmCtx.save();
+      mmCtx.translate(px, py);
+      mmCtx.rotate(-player.yaw);
+      mmCtx.fillStyle = "#ece8e1";
+      mmCtx.beginPath();
+      mmCtx.moveTo(0, -6);
+      mmCtx.lineTo(4.2, 5);
+      mmCtx.lineTo(-4.2, 5);
+      mmCtx.closePath();
+      mmCtx.fill();
+      mmCtx.restore();
+      mmCtx.strokeStyle = "rgba(253,69,86,0.5)";
+      mmCtx.strokeRect(0.5, 0.5, W - 1, H - 1);
+    }
+
     /* ---------------- 玩家状态 ---------------- */
     const player = {
       pos: new THREE.Vector3(), vel: new THREE.Vector3(),
@@ -284,6 +328,7 @@
       player.fireCd = FIRE_INT;
       player.burst++;
       player.lastShot = now;
+      if (window.AIM_SFX) AIM_SFX.shot();
 
       /* 散布：连续射击 + 移动/空中扩大 */
       const moving = player.vel.lengthSq() > 3;
@@ -327,6 +372,7 @@
       session.hud.ammo(player.mag, "∞");
       $(".hud-ammo", rootEl()).classList.add("is-reload");
       session.hud.msg("换弹中…", RELOAD_T * 1000);
+      if (window.AIM_SFX) AIM_SFX.reload();
     }
     function rootEl() { return document.querySelector(".game-root"); }
 
@@ -465,6 +511,7 @@
       });
       flashLight.intensity = Math.max(0, flashLight.intensity - dt * 30);
 
+      drawMinimap();
       renderer.render(scene, cam);
     }
 
