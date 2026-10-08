@@ -106,8 +106,8 @@
     return {
       score(v) { $(".hud-score", stage).textContent = v; },
       time(sec) {
-        const m = Math.floor(sec / 60), r = Math.max(0, Math.ceil(sec % 60));
-        $(".hud-time", stage).textContent = `${m}:${String(r).padStart(2, "0")}`;
+        const s = Math.max(0, Math.ceil(sec));
+        $(".hud-time", stage).textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
       },
       acc(v) { $(".hud-acc", stage).textContent = v == null ? "—" : v; },
       ammo(mag, reserve) {
@@ -196,6 +196,7 @@
     resize();
     session.last = performance.now();
     loop(session.last);
+    startWatchdog();
     tryFullscreen();
   }
 
@@ -230,8 +231,18 @@
     if (!session) return;
     session.raf = requestAnimationFrame(loop);
     const dt = Math.min(0.05, (now - session.last) / 1000);
+    if (dt <= 0) return;
     session.last = now;
     if (session.playfield && !session.paused) session.playfield.render(dt, now / 1000);
+  }
+
+  /* rAF 看门狗：部分内嵌环境/被遮挡窗口不派发 rAF，用定时器兜底驱动帧循环 */
+  function startWatchdog() {
+    session.watch = setInterval(() => {
+      if (!session || session.paused) return;
+      const now = performance.now();
+      if (now - session.last > 45) loop(now);
+    }, 25);
   }
 
   function resize() {
@@ -265,6 +276,7 @@
   function close() {
     if (!session) return;
     cancelAnimationFrame(session.raf);
+    clearInterval(session.watch);
     clearTimeout(session.loadTimer);
     if (session.playfield && session.playfield.dispose) session.playfield.dispose();
     if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
@@ -347,6 +359,11 @@
     open,
     close,
     get session() { return session; },
+    /* 调试/自动化：手动推进一步（被节流环境下测试用） */
+    step(dt) {
+      if (!session || !session.playfield || session.paused) return;
+      session.playfield.render(dt || 0.05, performance.now() / 1000);
+    },
   };
   bindOnce();
 })();
