@@ -119,25 +119,27 @@
 .hud-cross.is-hit::before, .hud-cross.is-hit::after { background: var(--red); }
 
 .hud-hint {
-  position: absolute; left: 22px; bottom: 18px;
-  font-size: 11px; color: var(--ink-faint); letter-spacing: 0.08em;
+  position: absolute; left: 26px; top: 216px;
+  font-size: 12px; font-weight: 700; color: var(--ink-dim); letter-spacing: 0.06em;
 }
-.hud-hint small { display: block; margin-top: 4px; font-size: 10px; color: rgba(236, 232, 225, 0.28); }
+.hud-hint small { display: none; }
 
 .hud-minimap {
-  position: absolute; right: 26px; top: 20px;
-  width: 148px; height: 148px;
-  border: 1px solid var(--line);
+  position: absolute; left: 18px; top: 16px;
+  width: 168px; height: 168px;
+  border-radius: 50%;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
 }
 .hud-ammo {
-  position: absolute; right: 26px; bottom: 14px;
-  display: flex; align-items: baseline; gap: 10px;
+  position: absolute; right: 10%; bottom: 26px;
+  display: flex; align-items: center; gap: 8px;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
 }
 .hud-ammo i { color: var(--ink-faint); font-style: normal; }
-.hud-ammo .hud-reserve { font-size: 16px; color: var(--ink-dim); }
-.hud-ammo b { font-size: 30px; font-weight: 900; }
+.hud-ammo .hud-reserve { font-size: 30px; font-weight: 900; font-style: italic; }
+.hud-ammo .hud-magicon { opacity: 0.9; margin: 0 2px; }
+.hud-ammo b { font-size: 22px; font-weight: 700; }
 .hud-ammo.is-reload b { color: var(--red); }
 
 .hud-msg {
@@ -172,31 +174,29 @@
 .g-gate b { font-size: 22px; font-weight: 900; letter-spacing: 0.06em; }
 .g-gate small { font-size: 12px; color: var(--ink-dim); }
 
-/* ---- 暂停菜单 ---- */
+/* ---- 暂停菜单（对齐原站：居中纯文字列表） ---- */
 .g-pause {
   position: absolute; inset: 0; z-index: 6;
   display: grid; place-items: center;
-  background: rgba(11, 13, 16, 0.72); backdrop-filter: blur(3px);
+  background: rgba(11, 13, 16, 0.45);
 }
 .g-pause.hidden { display: none; }
 .gp-panel {
-  display: flex; flex-direction: column; gap: 12px; width: 260px;
-  padding: 26px; background: var(--card); border: 1px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+  text-align: center;
 }
-.gp-panel b { font-size: 17px; font-weight: 900; margin-bottom: 8px; }
-.gp-sens {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 12px; color: var(--ink-dim); margin-bottom: 4px;
-}
-.gp-sens input { flex: 1; accent-color: var(--red); }
-.gp-sens b { min-width: 28px; text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; }
+.gp-panel .gp-title { font-size: 30px; font-weight: 900; letter-spacing: 0.12em; margin: 0 0 10px; }
 .gp-panel button {
-  padding: 11px 0; font-size: 13px; font-weight: 700;
-  color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+  padding: 0; font-size: 21px; font-weight: 700;
+  color: var(--ink); background: none; border: 0;
+  letter-spacing: 0.06em;
 }
-.gp-panel button:hover { border-color: var(--red); color: var(--red); }
-.gp-panel .gp-resume { background: var(--red); border-color: var(--red); color: #fff; }
-.gp-panel .gp-resume:hover { background: var(--red-deep); color: #fff; }
+.gp-panel button kbd {
+  font-family: var(--font); font-size: 11px; color: var(--ink-dim);
+  border: 1px solid var(--ink-faint); padding: 2px 7px; margin-left: 8px;
+  vertical-align: 3px;
+}
+.gp-panel button:hover { color: var(--red); }
 
 /* ---- 结算 ---- */
 .g-results {

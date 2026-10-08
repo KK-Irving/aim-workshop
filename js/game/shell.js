@@ -82,7 +82,7 @@
           <canvas class="hud-minimap" width="148" height="148"></canvas>
           <div class="hud-cross"></div>
           <div class="hud-hint">TAB 打开菜单<small>WASD 移动 · Shift 静步 · Space 跳 · R 换弹</small></div>
-          <div class="hud-ammo"><span class="hud-reserve">∞</span><i>|</i><b class="hud-mag">50</b></div>
+          <div class="hud-ammo"><span class="hud-reserve">∞</span><svg class="hud-magicon" width="12" height="22" viewBox="0 0 12 22"><path d="M1 3h10v13l-2 4H3l-2-4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.2 6h5.6M3.2 9h5.6M3.2 12h5.6" stroke="currentColor" stroke-width="1.2"/></svg><b class="hud-mag">50</b></div>
           <div class="hud-msg"></div>
           <div class="hud-hp"><i></i></div>
           <div class="hud-damage"></div>
@@ -90,14 +90,10 @@
         <div class="g-gate hidden"><b>点击任意位置进入训练场</b><small>进入后锁定鼠标 · ESC 呼出菜单</small></div>
         <div class="g-pause hidden">
           <div class="gp-panel">
-            <b>训练暂停</b>
-            <label class="gp-sens">灵敏度
-              <input class="gp-sens-range" type="range" min="0.1" max="1.5" step="0.1" value="0.5" />
-              <b class="gp-sens-val">0.5</b>
-            </label>
-            <button class="gp-resume" type="button">继续训练</button>
-            <button class="gp-restart" type="button">重新开始</button>
-            <button class="gp-quit" type="button">返回工坊</button>
+            <b class="gp-title">已暂停</b>
+            <button class="gp-resume" type="button">继续游戏</button>
+            <button class="gp-restart" type="button">重新开始 <kbd>T</kbd></button>
+            <button class="gp-quit" type="button">退出训练</button>
           </div>
         </div>
         <div class="g-results hidden"></div>
@@ -274,11 +270,6 @@
     if (!session || !session.live || session.paused) return;
     if (!$(".g-results", root).classList.contains("hidden")) return; /* 结算时不弹菜单 */
     session.paused = true;
-    /* 打开菜单时同步灵敏度滑条 */
-    const range = $(".gp-sens-range", root);
-    const cur = parseFloat(localStorage.getItem("aim-sens") || "0.5");
-    range.value = cur;
-    $(".gp-sens-val", root).textContent = cur.toFixed(1);
     $(".g-pause", root).classList.remove("hidden");
     if (session.playfield.setPaused) session.playfield.setPaused(true);
   }
@@ -375,15 +366,6 @@
       }
       if (e.target.closest(".g-gate")) gateClick();
     });
-    /* 灵敏度滑条：实时写入站点同一存档（aim-sens），与顶栏步进器共用 */
-    root.addEventListener("input", (e) => {
-      if (!e.target.matches(".gp-sens-range")) return;
-      const v = parseFloat(e.target.value);
-      localStorage.setItem("aim-sens", String(v));
-      $(".gp-sens-val", root).textContent = v.toFixed(1);
-      const topVal = document.querySelector("#sensVal");
-      if (topVal) topVal.textContent = v.toFixed(1);
-    });
     document.addEventListener("pointerlockchange", () => {
       if (!session || !session.live) return;
       /* 锁被系统/ESC 打断 → 暂停（菜单主动解锁的场景由菜单自身标记处理） */
@@ -392,7 +374,10 @@
     document.addEventListener("keydown", (e) => {
       if (!session || !session.live) return;
       if (e.key === "Escape") { if (!session.paused) pause(); }
-      if (e.key === "Tab") { e.preventDefault(); pause(); }
+      if (e.key === "Tab") { e.preventDefault(); if (!session.paused) pause(); }
+      if (e.code === "KeyT" && session.paused && $(".g-results", root).classList.contains("hidden")) {
+        restart(); /* 原站菜单快捷键：T 重新开始 */
+      }
     });
     window.addEventListener("resize", resize);
   }
