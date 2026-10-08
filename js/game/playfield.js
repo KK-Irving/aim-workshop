@@ -178,11 +178,12 @@
     /* ---------------- 曳光 / 弹孔 / 枪口焰 ---------------- */
     const fx = { tracers: [], holes: [], flash: null };
     const tracerMat = new THREE.MeshBasicMaterial({ color: 0xffd9a0, transparent: true, opacity: 0.85 });
-    function tracer(from, to) {
+    function tracer(from, to, color) {
       const len = from.distanceTo(to);
       const geo = new THREE.CylinderGeometry(0.012, 0.012, len, 4, 1, true);
       geo.translate(0, -len / 2, 0);
       const m = new THREE.Mesh(geo, tracerMat.clone());
+      if (color) m.material.color.set(color);
       m.position.copy(from);
       m.lookAt(to);
       m.rotateX(Math.PI / 2);
@@ -212,7 +213,7 @@
       yaw: 0, pitch: 0, onGround: true,
       mag: MAG_SIZE, reloading: 0,
       fireCd: 0, firing: false, burst: 0, lastShot: 0,
-      pitchKick: 0,
+      pitchKick: 0, hp: 100, hpMax: 100, moveLocked: false,
     };
     const keys = {};
     const stats = (session.stats = { kills: 0, head: 0, shots: 0, hits: 0, score: 0, timeLeft: drillDuration(drill), over: false });
@@ -317,6 +318,7 @@
       }
       if (player.mag === 0) startReload();
       updateAmmoHud();
+      updateAccHud();
     }
 
     function startReload() {
@@ -331,7 +333,10 @@
     function killBot(bot, isHead) {
       bot.alive = false;
       bot.dieT = 0.42;
-      bot.respawnT = 0.9 + Math.random() * 0.6;
+      /* 重生策略交给练法层；无 runtime 时随机重生 */
+      bot.respawnT = (session.runtime && session.runtime.controlsRespawns)
+        ? 1e9
+        : 0.9 + Math.random() * 0.6;
       stats.kills++;
       const add = isHead ? 150 : 100;
       stats.score += add;
@@ -342,6 +347,22 @@
       cross.classList.add("is-hit");
       setTimeout(() => cross.classList.remove("is-hit"), 110);
       if (window.AIM_SFX) AIM_SFX.hit(isHead);
+      if (session.runtime && session.runtime.onKill) session.runtime.onKill(bot, isHead);
+    }
+
+    /* ---------------- 受击（练法层调用） ---------------- */
+    function damagePlayer(dmg) {
+      if (stats.over || player.hp <= 0) return;
+      player.hp = Math.max(0, player.hp - dmg);
+      session.hud.hp((player.hp / player.hpMax) * 100);
+      $(".hud-hp", rootEl()).classList.toggle("is-low", player.hp / player.hpMax < 0.35);
+      const dmgEl = $(".hud-damage", rootEl());
+      dmgEl.style.opacity = "1";
+      setTimeout(() => { dmgEl.style.opacity = "0"; }, 70);
+      if (window.AIM_SFX) AIM_SFX.hurt();
+      if (player.hp <= 0 && session.runtime && session.runtime.onPlayerDead) {
+        session.runtime.onPlayerDead();
+      }
     }
 
     /* ---------------- 碰撞 ---------------- */
@@ -356,8 +377,8 @@
     }
     function movePlayer(dt) {
       const sp = keys.ShiftLeft || keys.ShiftRight ? 2.6 : 5.2;
-      const f = (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
-      const r = (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
+      const f = player.moveLocked ? 0 : (keys.KeyW ? 1 : 0) - (keys.KeyS ? 1 : 0);
+      const r = player.moveLocked ? 0 : (keys.KeyD ? 1 : 0) - (keys.KeyA ? 1 : 0);
       const sin = Math.sin(player.yaw), cos = Math.cos(player.yaw);
       let vx = (-sin * f + cos * r), vz = (-cos * f - sin * r);
       const len = Math.hypot(vx, vz) || 1;
@@ -389,6 +410,7 @@
     function render(dt, now) {
       t += dt;
       if (session.live && !session.paused && !stats.over) {
+        if (session.runtime && session.runtime.update) session.runtime.update(dt, t);
         if (player.firing) tryFire(now);
         player.fireCd = Math.max(0, player.fireCd - dt);
         if (player.reloading > 0) {
@@ -447,6 +469,9 @@
     }
 
     function updateAmmoHud() { session.hud.ammo(player.mag, "∞"); }
+    function updateAccHud() {
+      session.hud.acc(stats.shots ? Math.round((stats.hits / stats.shots) * 100) + "%" : null);
+    }
 
     /* ---------------- 生命周期 ---------------- */
     let built = false;
@@ -471,18 +496,20 @@
       },
       start() {
         resetPlayer();
+        player.hp = player.hpMax = 100;
         spawnBots();
         stats.timeLeft = drillDuration(drill);
         stats.over = false;
         session.hud.time(stats.timeLeft);
         updateAmmoHud();
         session.hud.hp(100);
+        $(".hud-hp", rootEl()).classList.remove("is-low");
         session.hud.msg(`<b>${drill.title}</b>`, 1500);
+        if (session.runtime && session.runtime.start) session.runtime.start();
       },
       restart() {
         stats.kills = stats.head = stats.shots = stats.hits = stats.score = 0;
         session.hud.score(0);
-        session.hud.acc(null);
         fx.holes.forEach((m) => scene.remove(m));
         fx.holes.length = 0;
         this.start();
@@ -502,6 +529,18 @@
         document.removeEventListener("keyup", onKeyUp);
         renderer.dispose();
       },
+      /* ---- 练法层（drills.js）使用的接口 ---- */
+      damagePlayer,
+      setHp(n) { player.hpMax = n || 100; player.hp = player.hpMax; session.hud.hp(100); },
+      setMoveLocked(v) { player.moveLocked = !!v; },
+      placeBotAt(bot, x, z) { placeBot(bot, x, z); },
+      hideBot(bot) { bot.alive = false; bot.dieT = 0; bot.group.visible = false; },
+      botsList() { return bots; },
+      playerInfo() {
+        return { pos: player.pos.clone(), yaw: player.yaw, pitch: player.pitch, eye: EYE };
+      },
+      tracer,
+      msg(html, ms) { session.hud.msg(html, ms); },
       /* 供自动化/调试：不改内部状态即可观察 */
       debug: () => ({
         pos: player.pos.toArray(), yaw: player.yaw, mag: player.mag, stats,

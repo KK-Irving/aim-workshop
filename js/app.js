@@ -282,14 +282,14 @@
     }, 4000); /* 同原站 --wk-slide-ms: 4000ms */
   }
 
-  /* ---------------- 排行榜弹窗（演示数据） ---------------- */
+  /* ---------------- 排行榜弹窗（演示数据 + 本机真实成绩） ---------------- */
   function openBoard(no) {
     const d = drillByNo[no];
     /* 由编号派生伪随机榜，保证每次打开同一张图结果一致 */
     let seed = [...no].reduce((s, c) => s * 31 + c.charCodeAt(0), 7) >>> 0;
     const rand = () => ((seed = (seed * 1103515245 + 12345) >>> 0), seed / 4294967296);
     const names = ["NeonAce", "瓦学弟", "FlashPoint", "孤影", "OuO", "壹叁柒", "PeekMaster", "小蹲一个", "Crosshair", "天眼"];
-    const rows = names
+    const fake = names
       .map((n) => ({
         name: n,
         kill: 18 + Math.floor(rand() * 22),
@@ -298,14 +298,22 @@
       .sort((a, b) => b.kill - a.kill || parseFloat(a.time) - parseFloat(b.time))
       .slice(0, 6);
 
+    /* 本机成绩排在前面（标「我」，红色高亮） */
+    const mine = (window.AIM_RESULTS ? AIM_RESULTS.recordsFor(no) : [])
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((r) => ({ name: "我", kill: r.kills, time: r.acc + " 命中率", me: true }));
+
+    const rows = [...mine, ...fake].sort((a, b) => (b.me ? 1e9 : b.kill) - (a.me ? 1e9 : a.kill)).slice(0, 6);
+
     $("#boardTitle").textContent = `${d.title} · 排行榜`;
     $("#boardSub").textContent = `${mapName(d.map)} · NO.${no} · ${d.type} · ${d.plays} 次游玩`;
     $("#boardBody").innerHTML = rows
       .map(
         (r, i) =>
-          `<tr>
+          `<tr class="${r.me ? "is-me" : ""}">
             <td class="rank r${i + 1}">${i < 3 ? "TOP" + (i + 1) : i + 1}</td>
-            <td class="name">${r.name}</td>
+            <td class="name">${r.name}${r.me ? '<i class="me-tag">本机</i>' : ""}</td>
             <td class="kill">${r.kill}</td>
             <td>${r.time}</td>
           </tr>`

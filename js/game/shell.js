@@ -84,6 +84,7 @@
           <div class="hud-ammo"><span class="hud-reserve">∞</span><i>|</i><b class="hud-mag">50</b></div>
           <div class="hud-msg"></div>
           <div class="hud-hp"><i></i></div>
+          <div class="hud-damage"></div>
         </div>
         <div class="g-gate hidden"><b>点击任意位置进入训练场</b><small>进入后锁定鼠标 · ESC 呼出菜单</small></div>
         <div class="g-pause hidden">
@@ -185,6 +186,10 @@
       session.playfield = window.AIM_PLAYFIELD
         ? new window.AIM_PLAYFIELD(canvas, session)
         : stubPlayfield(canvas, session);
+      /* 练法规则层（drills.js）：控制靶位生成/难度/死亡与结束 */
+      session.runtime = window.AIM_DRILL_RUNTIME
+        ? window.AIM_DRILL_RUNTIME(session)
+        : null;
       runLoading(session, enterStage);
     }, 60);
   }
@@ -253,6 +258,7 @@
 
   function pause() {
     if (!session || !session.live || session.paused) return;
+    if (!$(".g-results", root).classList.contains("hidden")) return; /* 结算时不弹菜单 */
     session.paused = true;
     $(".g-pause", root).classList.remove("hidden");
     if (session.playfield.setPaused) session.playfield.setPaused(true);
@@ -340,6 +346,13 @@
       if (e.target.closest(".gl-back") || e.target.closest(".gp-quit")) { close(); return; }
       if (e.target.closest(".gp-resume")) { resume(); return; }
       if (e.target.closest(".gp-restart")) { restart(); return; }
+      if (e.target.closest(".gr-quit")) { close(); return; }
+      if (e.target.closest(".gr-again")) {
+        $(".g-results", root).classList.add("hidden");
+        resume();
+        if (session.playfield.restart) session.playfield.restart();
+        return;
+      }
       if (e.target.closest(".g-gate")) gateClick();
     });
     document.addEventListener("pointerlockchange", () => {

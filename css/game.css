@@ -192,3 +192,45 @@
   background: rgba(11, 13, 16, 0.82); backdrop-filter: blur(4px);
 }
 .g-results.hidden { display: none; }
+.gr-panel {
+  width: min(420px, 88vw);
+  padding: 30px 34px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--red);
+  text-align: center;
+}
+.gr-tag {
+  display: inline-block; font-size: 10px; font-weight: 900; letter-spacing: 0.4em;
+  color: var(--red); margin-bottom: 10px;
+}
+.gr-title { font-size: 26px; font-weight: 900; }
+.gr-sub { margin-top: 6px; font-size: 12px; color: var(--ink-dim); }
+.gr-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin: 22px 0;
+}
+.gr-grid small { display: block; font-size: 10px; letter-spacing: 0.2em; color: var(--ink-faint); margin-bottom: 4px; }
+.gr-grid b { font-size: 22px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.gr-best {
+  display: block; font-style: normal; font-size: 9px; letter-spacing: 0.2em;
+  color: var(--green); margin-top: 2px;
+}
+.gr-btns { display: flex; gap: 10px; }
+.gr-btns button {
+  flex: 1; padding: 12px 0; font-size: 13px; font-weight: 700;
+  color: var(--ink); background: var(--panel-2); border: 1px solid var(--line);
+}
+.gr-btns button:hover { border-color: var(--ink-dim); }
+.gr-btns .gr-again { background: var(--red); border-color: var(--red); color: #fff; }
+.gr-btns .gr-again:hover { background: var(--red-deep); }
+.gr-note { display: block; margin-top: 14px; font-size: 10px; color: var(--ink-faint); }
+
+/* ---- 工坊排行榜里「我」的本机成绩 ---- */
+.board tr.is-me td { background: rgba(253, 69, 86, 0.08); }
+.board tr.is-me .name { color: var(--red); font-weight: 900; }
+.me-tag {
+  font-style: normal; font-size: 9px; letter-spacing: 0.15em;
+  color: #fff; background: var(--red);
+  padding: 1px 5px; margin-left: 6px; vertical-align: 1px;
+}
