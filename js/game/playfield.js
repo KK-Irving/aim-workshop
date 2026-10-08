@@ -376,22 +376,38 @@
     }
 
     /* ---------------- 武器持模型（步枪 + 双手，参考原站暴徒样式） ----------------
-     * 金属质感：Standard 材质 + 程序化房间环境贴图（PMREM） */
+     * 金属质感：Standard 材质 + HDR 环境贴图（Poly Haven CC0），
+     * HDR 加载失败时退回程序化房间环境 */
     const pmrem = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-    const envRoom = new THREE.Mesh(
-      new THREE.SphereGeometry(12, 16, 12),
-      new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0x6b7684 })
-    );
-    envScene.add(envRoom);
-    const envLight1 = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-    envLight1.position.set(0, 9, 0);
-    envLight1.rotation.x = Math.PI / 2;
-    envScene.add(envLight1);
-    const envLight2 = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({ color: 0xd8e2ee }));
-    envLight2.position.set(0, 2, -9);
-    envScene.add(envLight2);
-    scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+    function applyEnv(tex) {
+      tex.mapping = THREE.EquirectangularReflectionMapping;
+      scene.environment = pmrem.fromEquirectangular(tex).texture;
+      tex.dispose();
+    }
+    if (window.THREE.RGBELoader) {
+      new THREE.RGBELoader().load(
+        "assets/hdri/kloppenheim_02_puresky_1k.hdr",
+        (tex) => applyEnv(tex),
+        undefined,
+        () => { /* 失败 → 程序化环境 */ }
+      );
+    }
+    if (!scene.environment) {
+      const envScene = new THREE.Scene();
+      const envRoom = new THREE.Mesh(
+        new THREE.SphereGeometry(12, 16, 12),
+        new THREE.MeshBasicMaterial({ side: THREE.BackSide, color: 0x6b7684 })
+      );
+      envScene.add(envRoom);
+      const envLight1 = new THREE.Mesh(new THREE.PlaneGeometry(6, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      envLight1.position.set(0, 9, 0);
+      envLight1.rotation.x = Math.PI / 2;
+      envScene.add(envLight1);
+      const envLight2 = new THREE.Mesh(new THREE.PlaneGeometry(4, 2), new THREE.MeshBasicMaterial({ color: 0xd8e2ee }));
+      envLight2.position.set(0, 2, -9);
+      envScene.add(envLight2);
+      scene.environment = pmrem.fromScene(envScene, 0.04).texture;
+    }
 
     const METAL = new THREE.MeshStandardMaterial({ color: 0xffffff, map: makeTex(256, 256, (c, w, h) => drawMetal(c, w, h, 0x343941)), metalness: 0.85, roughness: 0.34 });
     const POLY = new THREE.MeshStandardMaterial({ color: 0x1c1f24, metalness: 0.2, roughness: 0.7 });
