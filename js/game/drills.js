@@ -83,7 +83,9 @@
     function spawnAt(spotFn, opts) {
       const bot = freeBot();
       if (!bot) return null;
-      pf.placeBotAt(bot, spotFn()[0], spotFn()[1]);
+      const spot = spotFn();
+      pf.spawnFx(spot[0], spot[1]); /* 出生光柱 */
+      pf.placeBotAt(bot, spot[0], spot[1]);
       /* 弹出动画：从地面长出 0.25s */
       bot.group.scale.y = 0.15;
       bot.grow = 0.25;

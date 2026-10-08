@@ -368,6 +368,8 @@
     });
     document.addEventListener("pointerlockchange", () => {
       if (!session || !session.live) return;
+      /* 兼容模式（无指针锁定）下锁定事件不参与暂停逻辑 */
+      if (session.fallbackAim) return;
       /* 锁被系统/ESC 打断 → 暂停（菜单主动解锁的场景由菜单自身标记处理） */
       if (!document.pointerLockElement && !session.paused) pause();
     });

@@ -36,6 +36,170 @@
     return m ? Math.min(90, +m[1]) : 60;
   }
 
+  /* ---------------- 程序化贴图（canvas 绘制，零素材） ---------------- */
+  function makeTex(w, h, draw, repeat) {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    draw(c.getContext("2d"), w, h);
+    const t = new THREE.CanvasTexture(c);
+    if (repeat) {
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(repeat[0], repeat[1]);
+    }
+    t.anisotropy = 4;
+    return t;
+  }
+  function hex(c) { return "#" + c.toString(16).padStart(6, "0"); }
+  function noise(ctx, w, h, n, light, dark) {
+    for (let i = 0; i < n; i++) {
+      ctx.fillStyle = Math.random() < 0.5 ? light : dark;
+      ctx.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+    }
+  }
+  /* 墙板：竖缝 + 腰线 + 上下 AO + 颗粒 */
+  function drawWall(ctx, w, h, base) {
+    ctx.fillStyle = hex(base);
+    ctx.fillRect(0, 0, w, h);
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "rgba(255,255,255,0.07)");
+    g.addColorStop(0.55, "rgba(0,0,0,0)");
+    g.addColorStop(1, "rgba(0,0,0,0.22)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(0,0,0,0.28)";
+    ctx.lineWidth = 4;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo((w * i) / 4, 0);
+      ctx.lineTo((w * i) / 4, h);
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 2;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo((w * i) / 4 + 4, 0);
+      ctx.lineTo((w * i) / 4 + 4, h);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(0,0,0,0.16)";
+    ctx.fillRect(0, h * 0.8, w, 8);
+    ctx.fillStyle = "rgba(255,255,255,0.05)";
+    ctx.fillRect(0, h * 0.8 - 3, w, 3);
+    noise(ctx, w, h, 500, "rgba(255,255,255,0.03)", "rgba(0,0,0,0.05)");
+  }
+  /* 地板：方格地砖 + 污渍 + 划痕 */
+  function drawFloor(ctx, w, h, base) {
+    ctx.fillStyle = hex(base);
+    ctx.fillRect(0, 0, w, h);
+    const tile = w / 4;
+    ctx.strokeStyle = "rgba(0,0,0,0.3)";
+    ctx.lineWidth = 3;
+    for (let i = 0; i <= 4; i++) {
+      ctx.beginPath(); ctx.moveTo(i * tile, 0); ctx.lineTo(i * tile, h); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i * tile); ctx.lineTo(w, i * tile); ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.045)";
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i <= 4; i++) {
+      ctx.beginPath(); ctx.moveTo(i * tile + 3, 0); ctx.lineTo(i * tile + 3, h); ctx.stroke();
+    }
+    /* 污渍 */
+    for (let i = 0; i < 7; i++) {
+      ctx.fillStyle = `rgba(0,0,0,${0.05 + Math.random() * 0.08})`;
+      ctx.beginPath();
+      ctx.ellipse(Math.random() * w, Math.random() * h, 20 + Math.random() * 60, 12 + Math.random() * 30, Math.random() * 3, 0, 7);
+      ctx.fill();
+    }
+    /* 划痕 */
+    ctx.strokeStyle = "rgba(255,255,255,0.05)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 10; i++) {
+      const x = Math.random() * w, y = Math.random() * h;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (Math.random() - 0.5) * 90, y + (Math.random() - 0.5) * 30);
+      ctx.stroke();
+    }
+    noise(ctx, w, h, 350, "rgba(255,255,255,0.03)", "rgba(0,0,0,0.06)");
+  }
+  /* 箱体：边框 + 铆钉 + 斜纹警示带 + 中央箭头 */
+  function drawCrate(ctx, w, h, base) {
+    ctx.fillStyle = hex(base);
+    ctx.fillRect(0, 0, w, h);
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "rgba(255,255,255,0.10)");
+    g.addColorStop(1, "rgba(0,0,0,0.25)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(0,0,0,0.35)";
+    ctx.lineWidth = 14;
+    ctx.strokeRect(10, 10, w - 20, h - 20);
+    ctx.strokeStyle = "rgba(255,255,255,0.10)";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(22, 22, w - 44, h - 44);
+    /* 铆钉 */
+    ctx.fillStyle = "rgba(0,0,0,0.4)";
+    [[26, 26], [w - 26, 26], [26, h - 26], [w - 26, h - 26]].forEach(([x, y]) => {
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, 7); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.beginPath(); ctx.arc(x - 1.5, y - 1.5, 2.5, 0, 7); ctx.fill();
+      ctx.fillStyle = "rgba(0,0,0,0.4)";
+    });
+    /* 中央向下箭头（落点提示意象） */
+    ctx.fillStyle = "rgba(255,255,255,0.14)";
+    ctx.beginPath();
+    ctx.moveTo(w / 2 - 34, h / 2 - 22);
+    ctx.lineTo(w / 2 + 34, h / 2 - 22);
+    ctx.lineTo(w / 2, h / 2 + 26);
+    ctx.closePath();
+    ctx.fill();
+    noise(ctx, w, h, 300, "rgba(255,255,255,0.04)", "rgba(0,0,0,0.06)");
+  }
+  /* 金属拉丝（枪体用） */
+  function drawMetal(ctx, w, h, base) {
+    ctx.fillStyle = hex(base);
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 160; i++) {
+      const y = Math.random() * h;
+      ctx.strokeStyle = Math.random() < 0.5 ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.08)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * w * 0.4, y);
+      ctx.lineTo(Math.random() * w * 0.6 + w * 0.4, y + (Math.random() - 0.5) * 3);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = "rgba(255,255,255,0.10)";
+      ctx.lineWidth = 1;
+      const x = Math.random() * w;
+      ctx.beginPath();
+      ctx.moveTo(x, Math.random() * h);
+      ctx.lineTo(x + (Math.random() - 0.5) * 8, Math.random() * h);
+      ctx.stroke();
+    }
+  }
+  /* 径向光斑（枪口焰 billboard） */
+  function drawFlash(ctx, w, h) {
+    const g = ctx.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2);
+    g.addColorStop(0, "rgba(255,240,200,1)");
+    g.addColorStop(0.25, "rgba(255,196,107,0.9)");
+    g.addColorStop(0.6, "rgba(255,140,60,0.35)");
+    g.addColorStop(1, "rgba(255,120,40,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    /* 六向星芒 */
+    ctx.translate(w / 2, h / 2);
+    for (let i = 0; i < 6; i++) {
+      ctx.rotate(Math.PI / 3);
+      const lg = ctx.createLinearGradient(0, 0, w / 2, 0);
+      lg.addColorStop(0, "rgba(255,220,150,0.9)");
+      lg.addColorStop(1, "rgba(255,180,80,0)");
+      ctx.fillStyle = lg;
+      ctx.fillRect(0, -3, w / 2, 6);
+    }
+  }
+
   /* ============================================================ */
   window.AIM_PLAYFIELD = function (canvas, session) {
     const drill = session.drill;
@@ -45,6 +209,8 @@
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
     renderer.setClearColor(theme.sky);
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(theme.sky);
     /* 原站观感：雾偏近偏灰，远景融进天色 */
@@ -53,9 +219,17 @@
     const cam = new THREE.PerspectiveCamera(73, 2, 0.08, 220);
     cam.rotation.order = "YXZ";
 
-    scene.add(new THREE.HemisphereLight(0xaebccb, 0x2a2c31, 1.25));
-    const sun = new THREE.DirectionalLight(theme.sun, 0.6);
+    scene.add(new THREE.HemisphereLight(0xc4d2e0, 0x33363c, 1.45));
+    const sun = new THREE.DirectionalLight(theme.sun, 0.7);
     sun.position.set(14, 26, 8);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -26;
+    sun.shadow.camera.right = 26;
+    sun.shadow.camera.top = 30;
+    sun.shadow.camera.bottom = -40;
+    sun.shadow.camera.far = 90;
+    sun.shadow.bias = -0.0006;
     scene.add(sun);
 
     /* ---------------- 关卡容器与碰撞盒 ---------------- */
@@ -63,13 +237,23 @@
     scene.add(world);
     const colliders = [];  /* {min:[x,y,z], max:[x,y,z]} AABB */
     const mats = {
-      wall: new THREE.MeshLambertMaterial({ color: theme.wall }),
-      wall2: new THREE.MeshLambertMaterial({ color: theme.wall2 }),
-      floor: new THREE.MeshLambertMaterial({ color: theme.floor }),
-      crate: new THREE.MeshLambertMaterial({ color: theme.crate }),
+      wall: new THREE.MeshLambertMaterial({ map: makeTex(512, 512, (c, w, h) => drawWall(c, w, h, theme.wall)) }),
+      wall2: new THREE.MeshLambertMaterial({ map: makeTex(512, 512, (c, w, h) => drawWall(c, w, h, theme.wall2)) }),
+      floor: new THREE.MeshLambertMaterial({ map: makeTex(512, 512, (c, w, h) => drawFloor(c, w, h, theme.floor), [7, 2.5]) }),
+      crate: new THREE.MeshLambertMaterial({ map: makeTex(512, 512, (c, w, h) => drawCrate(c, w, h, theme.crate)) }),
       accent: new THREE.MeshLambertMaterial({ color: theme.accent }),
       /* 训练机器人：黄橙机身 + 深色关节 + 发光目镜（参考原站靶机意象） */
-      botBody: new THREE.MeshLambertMaterial({ color: 0xf59e1b }),
+      botBody: new THREE.MeshLambertMaterial({ map: makeTex(256, 256, (c, w, h) => {
+        c.fillStyle = "#f59e1b";
+        c.fillRect(0, 0, w, h);
+        c.strokeStyle = "rgba(0,0,0,0.22)";
+        c.lineWidth = 5;
+        c.strokeRect(8, 8, w - 16, h - 16);
+        c.beginPath(); c.moveTo(w / 2, 8); c.lineTo(w / 2, h - 8); c.stroke();
+        c.fillStyle = "rgba(255,255,255,0.14)";
+        c.fillRect(12, 12, w - 24, 26);
+        noise(c, w, h, 160, "rgba(255,255,255,0.08)", "rgba(0,0,0,0.08)");
+      }) }),
       botDark: new THREE.MeshLambertMaterial({ color: 0x2c2f33 }),
       botGlow: new THREE.MeshLambertMaterial({ color: 0x0b0d10, emissive: 0x67e8f9, emissiveIntensity: 0.9 }),
     };
@@ -77,6 +261,8 @@
     function addBox(x, y, z, w, h, d, mat, solid) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat || mats.wall);
       m.position.set(x, y + h / 2, z);
+      if (solid !== false) m.castShadow = true;
+      m.receiveShadow = true;
       world.add(m);
       if (solid !== false) {
         colliders.push({
@@ -134,6 +320,11 @@
       visor.position.set(0, 1.64, 0.21);
       const antenna = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.22, 5), mats.botDark);
       antenna.position.set(0.12, 1.9, 0);
+      /* 背包单元（本地 -z 为背面） */
+      const pack = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.42, 0.16), mats.botDark);
+      pack.position.set(0, 1.12, -0.34);
+      const packStripe = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.03), mats.botGlow);
+      packStripe.position.set(0, 1.2, -0.43);
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 0.8, 10), mats.botBody);
       body.position.y = 1.06;
       const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 10), mats.botGlow);
@@ -149,9 +340,10 @@
       skirt.position.y = 0.42;
       const hover = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.07, 10), mats.botGlow);
       hover.position.y = 0.12;
-      const parts = [head, body, skirt, armL, armR, shL, shR];
+      const parts = [head, body, skirt, armL, armR, shL, shR, pack];
       parts.forEach((m) => g.add(m));
-      g.add(visor, antenna, chest, hover);
+      g.add(visor, antenna, chest, hover, packStripe);
+      g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
       /* 命中判定面：头 / 身 */
       head.userData.part = "head";
       parts.forEach((m) => { if (m !== head) m.userData.part = "body"; });
@@ -201,7 +393,7 @@
     envScene.add(envLight2);
     scene.environment = pmrem.fromScene(envScene, 0.04).texture;
 
-    const METAL = new THREE.MeshStandardMaterial({ color: 0x32363c, metalness: 0.85, roughness: 0.34 });
+    const METAL = new THREE.MeshStandardMaterial({ color: 0xffffff, map: makeTex(256, 256, (c, w, h) => drawMetal(c, w, h, 0x343941)), metalness: 0.85, roughness: 0.34 });
     const POLY = new THREE.MeshStandardMaterial({ color: 0x1c1f24, metalness: 0.2, roughness: 0.7 });
     const TAN = new THREE.MeshStandardMaterial({ color: 0xb3a06a, metalness: 0.4, roughness: 0.55 });
     const GLOVE = new THREE.MeshStandardMaterial({ color: 0x363b42, metalness: 0.05, roughness: 0.9 });
@@ -241,6 +433,17 @@
     part(new THREE.BoxGeometry(0.05, 0.014, 0.05), METAL, 0.028, 0.02, 0.02);
     /* 沙色细节件 */
     part(new THREE.BoxGeometry(0.06, 0.03, 0.06), TAN, 0, -0.045, 0.02);
+    /* 抛壳窗（右侧凹陷） */
+    part(new THREE.BoxGeometry(0.006, 0.035, 0.09), POLY, 0.031, 0.012, -0.06);
+    /* 扳机护圈 + 扳机 */
+    part(new THREE.BoxGeometry(0.008, 0.008, 0.07), METAL, 0, -0.052, 0.075);
+    part(new THREE.BoxGeometry(0.008, 0.035, 0.012), METAL, 0, -0.038, 0.05);
+    /* 护木散热孔（两侧） */
+    for (let i = 0; i < 3; i++) {
+      part(new THREE.BoxGeometry(0.056, 0.012, 0.03), POLY, 0, 0.02 - i * 0.022, -0.24 - i * 0.045);
+    }
+    /* 枪托底垫 */
+    part(new THREE.BoxGeometry(0.054, 0.09, 0.014), TAN, 0, -0.015, 0.345);
 
     /* 右手（握把） + 右小臂（白袖） */
     const handR = new THREE.Mesh(new THREE.SphereGeometry(0.042, 10, 8), GLOVE);
@@ -267,6 +470,76 @@
     viewmodel.rotation.y = -0.05;
     cam.add(viewmodel);
     scene.add(cam);
+
+    /* ---------------- 抛壳 / 枪口焰 ---------------- */
+    const shellGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.02, 6);
+    const shellMat = new THREE.MeshStandardMaterial({ color: 0xd3a94f, metalness: 0.9, roughness: 0.3 });
+    const shells = [];
+    function ejectShell() {
+      const m = new THREE.Mesh(shellGeo, shellMat);
+      m.position.copy(cam.localToWorld(new THREE.Vector3(0.28, -0.08, -0.22)));
+      m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      scene.add(m);
+      const right = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion);
+      shells.push({
+        m,
+        vel: right.multiplyScalar(1.2 + Math.random() * 0.8).add(new THREE.Vector3(0, 2 + Math.random(), 0)),
+        spin: new THREE.Vector3(Math.random() * 14 - 7, Math.random() * 14 - 7, Math.random() * 14 - 7),
+        life: 1.1,
+      });
+      if (shells.length > 24) scene.remove(shells.shift().m);
+    }
+    const flashTex = makeTex(128, 128, drawFlash);
+    const flashSprite = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.34, 0.34),
+      new THREE.MeshBasicMaterial({ map: flashTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    flashSprite.visible = false;
+    scene.add(flashSprite);
+    let flashT = 0;
+    function showMuzzleFlash(worldPos) {
+      flashSprite.position.copy(worldPos);
+      flashSprite.quaternion.copy(cam.quaternion);
+      flashSprite.rotation.z += Math.random() * 6.28;
+      const s = 0.8 + Math.random() * 0.5;
+      flashSprite.scale.set(s, s, 1);
+      flashSprite.visible = true;
+      flashT = 0.05;
+    }
+
+    /* ---------------- 粒子（爆散 / 火花 / 出生光柱） ---------------- */
+    const particles = [];
+    const partGeo = new THREE.BoxGeometry(1, 1, 1);
+    function burst(center, colors, opts) {
+      const { count = 12, size = 0.05, speed = 3, up = 1.6, life = 0.6, g = 9 } = opts || {};
+      for (let i = 0; i < count; i++) {
+        const m = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: colors[i % colors.length], transparent: true }));
+        m.scale.setScalar(size * (0.6 + Math.random() * 0.9));
+        m.position.copy(center);
+        m.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        scene.add(m);
+        particles.push({
+          m,
+          vel: new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.6 + 0.25, Math.random() - 0.5)
+            .normalize().multiplyScalar(speed * (0.5 + Math.random() * 0.9))
+            .add(new THREE.Vector3(0, up, 0)),
+          spin: (Math.random() - 0.5) * 12,
+          life, max: life, g,
+        });
+      }
+      if (particles.length > 140) {
+        particles.splice(0, particles.length - 140).forEach((p) => { scene.remove(p.m); p.m.material.dispose(); });
+      }
+    }
+    function spawnBeamFx(x, z) {
+      const m = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4, 0.4, 5.5, 12, 1, true),
+        new THREE.MeshBasicMaterial({ color: 0x67e8f9, transparent: true, opacity: 0.45, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, depthWrite: false })
+      );
+      m.position.set(x, 2.75, z);
+      scene.add(m);
+      particles.push({ m, beam: true, life: 0.45, max: 0.45 });
+    }
 
     /* ---------------- 曳光 / 弹孔 / 枪口焰 ---------------- */
     const fx = { tracers: [], holes: [], flash: null };
@@ -444,6 +717,8 @@
       const hits = ray.intersectObjects([...botMeshes(), ...world.children], false);
       const muzzle = cam.localToWorld(new THREE.Vector3(0.24, -0.18, -0.8));
       muzzleFlash(muzzle);
+      showMuzzleFlash(muzzle);
+      ejectShell();
       const end = hits.length ? hits[0].point : cam.position.clone().addScaledVector(dir, 120);
       tracer(muzzle, end);
       /* 调试：最近一发的射线与首个命中 */
@@ -464,8 +739,11 @@
         if (bot && bot.alive) {
           killBot(bot, h.object.userData.part === "head");
           stats.hits++;
+          burst(h.point, [0x67e8f9, 0xf59e1b, 0xffe9c2], { count: 6, size: 0.035, speed: 2.4, up: 0.6, life: 0.4, g: 6 });
         } else {
-          hole(h.point, h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : dir.clone().negate());
+          const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : dir.clone().negate();
+          hole(h.point, n);
+          burst(h.point.clone().addScaledVector(n, 0.03), [0x9aa4ad, 0x5c646b], { count: 4, size: 0.03, speed: 1.6, up: 0.9, life: 0.35, g: 8 });
         }
       }
       if (player.mag === 0) startReload();
@@ -500,6 +778,9 @@
       cross.classList.add("is-hit");
       setTimeout(() => cross.classList.remove("is-hit"), 110);
       if (window.AIM_SFX) AIM_SFX.hit(isHead);
+      /* 击杀爆散：机体碎屑 + 发光核心 */
+      const center = bot.pos.clone().add(new THREE.Vector3(0, 1.1, 0));
+      burst(center, [0xf59e1b, 0x2c2f33, 0x67e8f9], { count: isHead ? 18 : 14, size: 0.055, speed: 3.2, up: 1.8, life: 0.65, g: 9 });
       if (session.runtime && session.runtime.onKill) session.runtime.onKill(bot, isHead);
     }
 
@@ -641,7 +922,53 @@
         if (tr.life <= 0) { scene.remove(tr.m); tr.m.geometry.dispose(); return false; }
         return true;
       });
+      /* 弹壳物理 */
+      for (let i = shells.length - 1; i >= 0; i--) {
+        const s = shells[i];
+        s.life -= dt;
+        s.vel.y -= 9.8 * dt;
+        s.m.position.addScaledVector(s.vel, dt);
+        s.m.rotation.x += s.spin.x * dt;
+        s.m.rotation.y += s.spin.y * dt;
+        s.m.rotation.z += s.spin.z * dt;
+        if (s.m.position.y < 0.015 && s.vel.y < 0) {
+          s.m.position.y = 0.015;
+          s.vel.set(0, 0, 0);
+          s.spin.set(0, 0, 0);
+        }
+        if (s.life < 0.3) s.m.scale.setScalar(Math.max(0.01, s.life / 0.3));
+        if (s.life <= 0) { scene.remove(s.m); shells.splice(i, 1); }
+      }
+      /* 枪口焰衰减 */
+      if (flashT > 0) {
+        flashT -= dt;
+        flashSprite.material.opacity = Math.max(0, flashT / 0.05);
+        if (flashT <= 0) flashSprite.visible = false;
+      }
       flashLight.intensity = Math.max(0, flashLight.intensity - dt * 30);
+      /* 粒子 */
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.life -= dt;
+        const k = Math.max(0, p.life / p.max);
+        if (p.beam) {
+          p.m.material.opacity = k * 0.45;
+          p.m.scale.set(0.6 + k * 0.4, 1, 0.6 + k * 0.4);
+        } else {
+          p.vel.y -= (p.g || 9) * dt;
+          p.m.position.addScaledVector(p.vel, dt);
+          if (p.m.position.y < 0.02) { p.m.position.y = 0.02; p.vel.y *= -0.35; p.vel.x *= 0.7; p.vel.z *= 0.7; }
+          p.m.rotation.y += p.spin * dt;
+          p.m.rotation.x += p.spin * 0.7 * dt;
+          p.m.material.opacity = k;
+        }
+        if (p.life <= 0) {
+          scene.remove(p.m);
+          if (p.beam) p.m.geometry.dispose();
+          p.m.material.dispose();
+          particles.splice(i, 1);
+        }
+      }
 
       drawMinimap();
       renderer.render(scene, cam);
@@ -720,6 +1047,7 @@
       },
       tracer,
       msg(html, ms) { session.hud.msg(html, ms); },
+      spawnFx(x, z) { spawnBeamFx(x, z); },
       /* 视线检测：from→to 之间是否被场景几何遮挡（练法层布点用） */
       losBlocked(from, to) {
         const dir = to.clone().sub(from);
